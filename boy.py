@@ -5,6 +5,7 @@ from pico2d import get_time, load_image, SDL_KEYDOWN, SDL_KEYUP, SDLK_SPACE, SDL
 
 from ball import Ball
 import game_world
+from game_world import add_collision_pair
 import game_framework
 from state_machine import start_event, right_down, left_up, left_down, right_up, space_down, StateMachine, time_out
 
@@ -58,14 +59,13 @@ class Idle:
         if get_time() - boy.wait_time > 2:
             boy.state_machine.add_event(('TIME_OUT', 0))
 
+        boy.get_bb_x1, boy.get_bb_y1, boy.get_bb_x2, boy.get_bb_y2 = boy.x - 20, boy.y - 35, boy.x + 20, boy.y + 42
+
     @staticmethod
     def draw(boy):
         boy.image.clip_draw(int(boy.frame) * 100, boy.action * 100, 100, 100, boy.x, boy.y)
         draw_rectangle(*boy.get_bb())  # *을 써줌으로서 패키지를 뜯는다.
 
-    def get_bb(self):
-        # fill here
-        return self.x - 20, self.y - 50, self.x + 20, self.y + 50       #4개의 값으로 구성된 하나의 패키지(튜플)을 넘겨줌
 
 
 
@@ -86,6 +86,10 @@ class Sleep:
         # boy.frame = (boy.frame + 1) % 8
         boy.frame = (boy.frame + FRAMES_PER_ACTION*ACTION_PER_TIME*game_framework.frame_time) % 8
 
+        if boy.face_dir == 1:
+            boy.get_bb_x1, boy.get_bb_y1, boy.get_bb_x2, boy.get_bb_y2 = boy.x - 67, boy.y-40 , boy.x + 10, boy.y
+        else:
+            boy.get_bb_x1, boy.get_bb_y1, boy.get_bb_x2, boy.get_bb_y2 = boy.x -10, boy.y - 40, boy.x + 67, boy.y
 
     @staticmethod
     def draw(boy):
@@ -95,7 +99,7 @@ class Sleep:
         else:
             boy.image.clip_composite_draw(int(boy.frame) * 100, 200, 100, 100,
                                           -3.141592 / 2, '', boy.x + 25, boy.y - 25, 100, 100)
-
+        draw_rectangle(*boy.get_bb())  # *을 써줌으로서 패키지를 뜯는다.
 
 class Run:
     @staticmethod
@@ -119,11 +123,13 @@ class Run:
         boy.frame = (boy.frame + FRAMES_PER_ACTION*ACTION_PER_TIME*game_framework.frame_time) % 8
 
         boy.x += boy.dir * RUN_SPEED_PPS * game_framework.frame_time
+        boy.get_bb_x1, boy.get_bb_y1, boy.get_bb_x2, boy.get_bb_y2 = boy.x - 30, boy.y - 35, boy.x + 30, boy.y + 32
         pass
 
     @staticmethod
     def draw(boy):
         boy.image.clip_draw(int(boy.frame) * 100, boy.action * 100, 100, 100, boy.x, boy.y)
+        draw_rectangle(*boy.get_bb())  # *을 써줌으로서 패키지를 뜯는다.
 
 
 
@@ -133,6 +139,7 @@ class Boy:
 
     def __init__(self):
         self.x, self.y = 400, 90
+        self.get_bb_x1, self.get_bb_y1, self.get_bb_x2, self.get_bb_y2 =  self.x - 20, self.y - 50, self.x + 20, self.y + 50
         self.face_dir = 1
         self.ball_count = 10
         self.font = load_font('ENCR10B.TTF', 16)
@@ -158,21 +165,25 @@ class Boy:
     def draw(self):
         self.state_machine.draw()
         self.font.draw(self.x-10, self.y + 50, f'{self.ball_count:02d}', (255, 255, 0))
-        #draw_rectangle(*self.get_bb())      #*을 써줌으로서 패키지를 뜯는다.
 
     def fire_ball(self):
         if self.ball_count > 0:
             self.ball_count -= 1
-            ball = Ball(self.x, self.y, self.face_dir*10)
-            game_world.add_object(ball)
+            fired_ball = Ball(self.x, self.y, self.face_dir*10)
+            game_world.add_object(fired_ball)
+            add_collision_pair('fired_ball:zombie', fired_ball, None)
 
     def get_bb(self):
         # fill here
-        return self.x - 20, self.y - 50, self.x + 20, self.y + 50       #4개의 값으로 구성된 하나의 패키지(튜플)을 넘겨줌
+        return self.get_bb_x1, self.get_bb_y1, self.get_bb_x2, self.get_bb_y2       #4개의 값으로 구성된 하나의 패키지(튜플)을 넘겨줌
+
         pass
 
     def handle_collision(self, group, other):
         # fill here
         if group == 'boy:ball':
             self.ball_count +=1
+
+        if group == 'boy:zombie':
+            game_framework.quit()
         pass

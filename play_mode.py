@@ -35,14 +35,21 @@ def init():
     balls = [Ball(random.randint(100, 1600 - 100), 60, 0) for _ in range(30)]
     game_world.add_objects(balls, 1)    #게임 월드에 추가
 
+    zombies = [Zombie() for _ in range(5)]
+    game_world.add_objects(zombies, 1)
+
     # fill here
     add_collision_pair('boy:ball', boy, None)
     for ball in balls:
         add_collision_pair('boy:ball',None,ball)
 
-    zombies = [Zombie() for _ in range(5)]
-    game_world.add_objects(zombies, 1)
 
+    add_collision_pair('boy:zombie', boy, None)
+    for zombie in zombies:
+        add_collision_pair('boy:zombie', None, zombie)
+
+    for zombie in zombies:
+        add_collision_pair('fired_ball:zombie', None, zombie)
 
 
 
