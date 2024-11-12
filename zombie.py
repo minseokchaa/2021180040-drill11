@@ -47,6 +47,7 @@ class Zombie:
 
         if self.life == 0:
             game_world.remove_object(self)
+            print ('zombie is dead again')
         pass
 
 
